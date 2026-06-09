@@ -2,7 +2,9 @@ import argparse
 import json
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .fetch import download_frames
 from .forecast import generate_forecast
@@ -73,6 +75,13 @@ examples:
         help="Output raw time-series data as JSON",
     )
     parser.add_argument(
+        "--timezone", "--tz",
+        default="UTC",
+        metavar="TZ",
+        help="IANA timezone for displayed timestamps (default: UTC). "
+             "Examples: Australia/Brisbane, Australia/Sydney, America/New_York",
+    )
+    parser.add_argument(
         "--cache-dir",
         type=Path,
         default=Path(tempfile.gettempdir()) / "bom_radar_cache",
@@ -80,6 +89,16 @@ examples:
     )
 
     args = parser.parse_args()
+
+    try:
+        tz = ZoneInfo(args.timezone)
+    except ZoneInfoNotFoundError:
+        parser.error(f"Unknown timezone '{args.timezone}'. Use an IANA zone name, e.g. Australia/Brisbane")
+
+    def fmt_ts(iso: str) -> str:
+        dt = datetime.fromisoformat(iso).astimezone(tz)
+        label = args.timezone if args.timezone != "UTC" else "UTC"
+        return f"{dt.strftime('%Y-%m-%d %H:%M')} {label}"
 
     locations: dict[str, tuple[float, float]] = {}
     if args.preset:
@@ -108,7 +127,7 @@ examples:
         return
 
     latest = time_series[-1]
-    print(f"\nLatest snapshot — {latest['timestamp']} UTC")
+    print(f"\nLatest snapshot — {fmt_ts(latest['timestamp'])}")
     print(f"Station: {latest['station']}\n")
     for name, data in latest["locations"].items():
         if data["mm_hr"] is not None:
