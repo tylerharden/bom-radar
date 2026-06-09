@@ -1,0 +1,17 @@
+[project]
+name = "bom-radar"
+version = "0.1.0"
+description = "Australian BOM weather radar analysis with AI forecast"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40.0",
+    "pillow>=10.0",
+    "numpy>=1.26",
+]
+
+[project.scripts]
+bom-radar = "bom_radar.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
